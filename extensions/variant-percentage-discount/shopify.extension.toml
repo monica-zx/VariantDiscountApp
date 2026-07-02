@@ -1,0 +1,20 @@
+api_version = "2026-04"
+
+[[extensions]]
+name = "t:name"
+handle = "variant-percentage-discount"
+type = "function"
+uid = "f127c5d7-47ff-e9c2-16b1-523ca25f27a69502a20c"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.lines.discounts.generate.run"
+  input_query = "src/cart_lines_discounts_generate_run.graphql"
+  export = "cart-lines-discounts-generate-run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"
+
+[extensions.ui]
+handle = "variant-discount-ui"
