@@ -5,6 +5,7 @@ name = "Variant Discount App"
 application_url = "https://variant-discount-app.vercel.app"
 embedded = true
 
+[auth]
 redirect_urls = [
   "https://variant-discount-app.vercel.app/auth/callback",
   "https://variant-discount-app.vercel.app/auth/shopify/callback",
@@ -60,10 +61,6 @@ api_version = "2026-07"
 
 [pos]
 embedded = false
-
-
-[auth]
-redirect_urls = [ "https://example.com/api/auth" ]
 
 [build]
 include_config_on_deploy = true
