@@ -1,0 +1,12 @@
+{
+  "buildCommand": "npm run build",
+  "installCommand": "npm install && npx prisma generate",
+  "framework": null,
+  "outputDirectory": "build/client",
+  "regions": ["iad1"],
+  "functions": {
+    "build/server/index.js": {
+      "runtime": "nodejs22.x"
+    }
+  }
+}
