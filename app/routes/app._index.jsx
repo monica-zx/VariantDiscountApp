@@ -97,11 +97,8 @@ export default function Index({ loaderData }) {
 
       <s-section heading="About this app">
         <s-paragraph>
-          This app adds a custom discount type that targets cart line items by{" "}
-          <s-text fontWeight="bold">variant name</s-text> instead of by
-          product or SKU. Type in one or more variant names (e.g. &quot;Large&quot;),
-          and any matching cart line — across any product — becomes eligible
-          for the discount.
+          Create smart discounts based on variant names. {" "}
+          <s-text fontWeight="bold">variant names</s-text>. Include or exclude variants and apply percentage or fixed amount discounts with ease.
         </s-paragraph>
         <s-paragraph>
           Each discount can apply either a{" "}
@@ -158,42 +155,6 @@ export default function Index({ loaderData }) {
             </s-table-body>
           </s-table>
         )}
-      </s-section>
-
-      <s-section slot="aside" heading="App template specs">
-        <s-paragraph>
-          <s-text>Framework: </s-text>
-          <s-link href="https://reactrouter.com/" target="_blank">
-            React Router
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Interface: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/app-home/using-polaris-components"
-            target="_blank"
-          >
-            Polaris web components
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>API: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/api/admin-graphql"
-            target="_blank"
-          >
-            GraphQL
-          </s-link>
-        </s-paragraph>
-        <s-paragraph>
-          <s-text>Discount logic: </s-text>
-          <s-link
-            href="https://shopify.dev/docs/apps/build/discounts/build-discount-function"
-            target="_blank"
-          >
-            Shopify Functions
-          </s-link>
-        </s-paragraph>
       </s-section>
     </s-page>
   );

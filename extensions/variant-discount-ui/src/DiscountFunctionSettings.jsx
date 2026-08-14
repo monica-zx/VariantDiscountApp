@@ -1,6 +1,6 @@
 import "@shopify/ui-extensions/preact";
 import { render } from "preact";
-import { useState, useEffect, useRef } from "preact/hooks";
+import { useState, useEffect, useRef, useCallback, useMemo } from "preact/hooks";
 
 export default async () => {
   render(<App />, document.body);
@@ -19,18 +19,45 @@ const LOAD_QUERY = `
   }
 `;
 
+// ─── Pure helpers (kept outside the component so they aren't re-created every render) ───
+
+function validateDiscountValue(type, rawValue) {
+  if (rawValue === "" || rawValue === null || Number.isNaN(Number(rawValue))) {
+    return "Enter a discount value";
+  }
+  const num = Number(rawValue);
+  if (num <= 0) return "Must be greater than 0";
+  if (type === "percentage" && num > 100) return "Percentage can't exceed 100";
+  return "";
+}
+
+function matchModeHelpText(matchMode, variantCount) {
+  if (matchMode === "exclude") {
+    return variantCount === 0
+      ? "No variants excluded yet — this discount currently applies to your ENTIRE store."
+      : "Discount applies to every variant except the ones listed below (exact name match, case-insensitive).";
+  }
+  return variantCount === 0
+    ? "Add at least one variant name below — otherwise this discount won't apply to anything."
+    : "Discount applies only to variants whose name exactly matches one below (case-insensitive).";
+}
+
 function App() {
   const { applyMetafieldChange, data, query } = shopify;
+
   const [discountType, setDiscountType] = useState("percentage"); // "percentage" | "fixed"
   const [discountValue, setDiscountValue] = useState(10);
+  const [matchMode, setMatchMode] = useState("include"); // "include" | "exclude"
   const [variantNames, setVariantNames] = useState([]);
   const [nameInput, setNameInput] = useState("");
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
-  const [debugInfo, setDebugInfo] = useState("");
+  const [saveErrorMessage, setSaveErrorMessage] = useState("");
 
   // Track if this is the initial load — don't auto-save on first render
   const isInitialLoad = useRef(true);
+  const duplicateTimerRef = useRef(null);
 
   // ─── Load saved config via GraphQL ───────────────────────────────────────
   useEffect(() => {
@@ -46,18 +73,20 @@ function App() {
 
         if (val) {
           const parsed = JSON.parse(val);
-          setDebugInfo("✅ Loaded saved config");
           if (parsed.discountType === "percentage" || parsed.discountType === "fixed") {
             setDiscountType(parsed.discountType);
           }
           if (typeof parsed.discountValue === "number") setDiscountValue(parsed.discountValue);
+          if (parsed.matchMode === "include" || parsed.matchMode === "exclude") {
+            setMatchMode(parsed.matchMode);
+          }
           if (Array.isArray(parsed.variantNames)) setVariantNames(parsed.variantNames);
-        } else {
-          setDebugInfo("ℹ️ No saved config yet");
         }
       } catch (e) {
+        // Technical detail stays in the console; merchants get a plain-language banner instead.
         console.error("Load error:", e);
-        setDebugInfo("❌ Load error: " + e.message);
+        setSaveStatus("error");
+        setSaveErrorMessage("Couldn't load your saved settings. Try reopening this panel.");
       } finally {
         setLoading(false);
       }
@@ -66,7 +95,12 @@ function App() {
     loadConfig();
   }, []);
 
-  // ─── Auto-save whenever any field changes ─────────────────────────────────
+  const discountValueError = useMemo(
+    () => validateDiscountValue(discountType, discountValue),
+    [discountType, discountValue]
+  );
+
+  // ─── Auto-stage changes (debounced) whenever a field changes ─────────────
   useEffect(() => {
     if (loading) return;
 
@@ -75,11 +109,19 @@ function App() {
       return;
     }
 
+    // Don't stage invalid data — let the merchant fix it first.
+    if (discountValueError) {
+      setSaveStatus("error");
+      setSaveErrorMessage(discountValueError);
+      return;
+    }
+
     setSaveStatus("saving");
 
     const payload = JSON.stringify({
       discountType,
       discountValue: Number(discountValue),
+      matchMode,
       variantNames,
     });
 
@@ -94,39 +136,50 @@ function App() {
         });
 
         if (result.type === "error") {
+          console.error("Save error:", result.message);
           setSaveStatus("error");
-          setDebugInfo("❌ Save error: " + result.message);
+          setSaveErrorMessage("Couldn't stage your changes. Please try again.");
         } else {
           setSaveStatus("saved");
-          setDebugInfo("✅ Config ready — click Save to confirm");
         }
       } catch (e) {
         console.error("Auto-save error:", e);
         setSaveStatus("error");
-        setDebugInfo("❌ Save error: " + e.message);
+        setSaveErrorMessage("Couldn't stage your changes. Please try again.");
       }
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [discountType, discountValue, variantNames, loading]);
+  }, [discountType, discountValue, matchMode, variantNames, loading, discountValueError]);
 
   // ─── Add / remove variant names ───────────────────────────────────────────
-  function handleAddName() {
+  const handleAddName = useCallback(() => {
     const trimmed = nameInput.trim();
     if (!trimmed) return;
 
     const exists = variantNames.some(
       (n) => n.toLowerCase() === trimmed.toLowerCase()
     );
-    if (!exists) {
-      setVariantNames((c) => [...c, trimmed]);
-    }
-    setNameInput("");
-  }
 
-  function handleRemoveName(name) {
+    if (exists) {
+      setDuplicateWarning(true);
+      clearTimeout(duplicateTimerRef.current);
+      duplicateTimerRef.current = setTimeout(() => setDuplicateWarning(false), 2000);
+      return;
+    }
+
+    setVariantNames((c) => [...c, trimmed]);
+    setNameInput("");
+    setDuplicateWarning(false);
+  }, [nameInput, variantNames]);
+
+  const handleRemoveName = useCallback((name) => {
     setVariantNames((c) => c.filter((n) => n !== name));
-  }
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    setVariantNames([]);
+  }, []);
 
   // ─── Render ───────────────────────────────────────────────────────────────
   if (loading) {
@@ -141,25 +194,37 @@ function App() {
   }
 
   const isPercentage = discountType === "percentage";
+  const showRiskWarning = matchMode === "exclude" && variantNames.length === 0;
 
   return (
     <s-function-settings>
       <s-section heading="Variant Name Discount">
         <s-stack gap="base">
 
-          {/* Status banner */}
-          <s-banner tone={
-            saveStatus === "saved" ? "success"
-            : saveStatus === "error" ? "critical"
-            : "info"
-          }>
-            <s-text>
-              {saveStatus === "saving" ? "⏳ Saving..."
-               : saveStatus === "saved" ? "✅ Changes ready — click the Save button above to confirm"
-               : saveStatus === "error" ? "❌ Save failed — check console"
-               : debugInfo}
-            </s-text>
-          </s-banner>
+          {/* Status banner — only shown when there's something worth telling the merchant */}
+          {saveStatus === "saving" && (
+            <s-banner tone="info">
+              <s-text>Staging changes…</s-text>
+            </s-banner>
+          )}
+          {saveStatus === "saved" && (
+            <s-banner tone="success">
+              <s-text>Changes staged — click Save (top of page) to publish.</s-text>
+            </s-banner>
+          )}
+          {saveStatus === "error" && (
+            <s-banner tone="critical">
+              <s-text>{saveErrorMessage}</s-text>
+            </s-banner>
+          )}
+          {showRiskWarning && (
+            <s-banner tone="warning">
+              <s-text>
+                Heads up: with "exclude" selected and no variant names added, this
+                discount applies to every variant in your store.
+              </s-text>
+            </s-banner>
+          )}
 
           {/* Discount type */}
           <s-select
@@ -172,7 +237,7 @@ function App() {
             <s-option value="fixed">Fixed amount off</s-option>
           </s-select>
 
-          {/* Discount value — label/bounds adapt to type */}
+          {/* Discount value — label/bounds adapt to type, inline validation */}
           <s-number-field
             label={isPercentage ? "Discount percentage (%)" : "Discount amount"}
             name="discountValue"
@@ -180,14 +245,29 @@ function App() {
             min={0.01}
             max={isPercentage ? 100 : undefined}
             step={isPercentage ? 1 : 0.01}
-            onChange={(e) => setDiscountValue(Number(e.currentTarget.value))}
+            error={discountValueError || undefined}
+            onChange={(e) => setDiscountValue(e.currentTarget.value)}
           />
 
-          {/* Hidden fields — keep form dirty so page Save button stays enabled */}
+          {/* Include vs exclude mode */}
+          <s-select
+            label="Apply discount to"
+            name="matchMode"
+            value={matchMode}
+            onChange={(e) => setMatchMode(e.currentTarget.value)}
+          >
+            <s-option value="include">Only the variants listed below</s-option>
+            <s-option value="exclude">All variants EXCEPT the ones listed below</s-option>
+          </s-select>
+
+          {/* Hidden field — mirrors variantNames so the extension's array data
+              participates in Shopify's native form dirty-state tracking, since
+              there's no built-in "list" form control. (matchMode doesn't need
+              this: the <s-select name="matchMode"> above already tracks itself.) */}
           <s-box display="none">
             <s-text-field
               label="variantNames"
-              labelaccessibilityvisibility="hidden"
+              labelAccessibilityVisibility="exclusive"
               name="variantNames"
               value={variantNames.join(",")}
               defaultValue=""
@@ -200,7 +280,11 @@ function App() {
               label="Variant name"
               placeholder="e.g. Large"
               value={nameInput}
-              onChange={(e) => setNameInput(e.currentTarget.value)}
+              error={duplicateWarning ? "Already added" : undefined}
+              onChange={(e) => {
+                setNameInput(e.currentTarget.value);
+                if (duplicateWarning) setDuplicateWarning(false);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -211,25 +295,23 @@ function App() {
             <s-button onClick={handleAddName}>Add</s-button>
           </s-stack>
 
-          <s-text tone="subdued">
-            Matches any cart variant whose name
-          </s-text>
+          <s-text tone="subdued">{matchModeHelpText(matchMode, variantNames.length)}</s-text>
 
           {/* Saved names list */}
           {variantNames.length > 0 && (
             <s-stack gap="tight">
+              <s-stack direction="inline" alignItems="center" gap="base">
+                <s-text tone="subdued">
+                  {variantNames.length} variant name{variantNames.length === 1 ? "" : "s"} added
+                </s-text>
+                <s-button variant="tertiary" onClick={handleClearAll}>
+                  Clear all
+                </s-button>
+              </s-stack>
               {variantNames.map((name) => (
-                <s-stack
-                  key={name}
-                  direction="inline"
-                  alignItems="center"
-                  gap="tight"
-                >
+                <s-stack key={name} direction="inline" alignItems="center" gap="tight">
                   <s-text>{name}</s-text>
-                  <s-button
-                    variant="tertiary"
-                    onClick={() => handleRemoveName(name)}
-                  >
+                  <s-button variant="tertiary" onClick={() => handleRemoveName(name)}>
                     Remove
                   </s-button>
                 </s-stack>

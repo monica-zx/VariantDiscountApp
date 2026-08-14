@@ -9,6 +9,12 @@ query CartInput {
           title
         }
       }
+      gpoGroup: attribute(key: "_gpo_product_group") {
+        value
+      }
+      gpoParentGroup: attribute(key: "_gpo_parent_product_group") {
+        value
+      }
     }
   }
   discount {
