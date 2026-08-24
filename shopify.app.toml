@@ -34,20 +34,21 @@ api_version = "2026-07"
   topics = [ "app/scopes_update" ]
 
   # Mandatory GDPR compliance webhooks — required for all public Shopify apps.
+  # These use compliance_topics, not topics.
   [[webhooks.subscriptions]]
-  uri = "/webhooks/customers/data_request"
-  topics = [ "customers/data_request" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/customers/redact"
-  topics = [ "customers/redact" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/shop/redact"
-  topics = [ "shop/redact" ]
+  uri = "/webhooks/compliance"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [pos]
 embedded = false
 
 [build]
 automatically_update_urls_on_dev = true
+
+# Workaround for a Shopify CLI 4.7.0 validation regression that requires
+# an [events] section even for apps that don't use the Events API.
+# Remove this once Shopify ships a fix.
+# https://community.shopify.dev/t/shopify-cli-4-7-0-requires-events-and-events-subscription-even-when-app-does-not-use-events-api/37089
+[events]
+api_version = "unstable"
+subscription = []

@@ -1,5 +1,6 @@
 import { DiscountClass, ProductDiscountSelectionStrategy } from "../generated/api";
 
+
 function normalize(str) {
   return String(str ?? "").trim().toLowerCase();
 }
@@ -15,6 +16,14 @@ function titleParts(title) {
 }
 
 export function cartLinesDiscountsGenerateRun(input) {
+  const enteredCode = input.triggeringDiscountCode;
+  const bail = (message) => {
+    if (enteredCode) {
+      return { operations: [{ enteredDiscountCodesReject: { codes: [{ code: enteredCode }], message } }] };
+    }
+    return { operations: [] };   // fixed: no more self-call
+  };
+
   if (!input.discount.discountClasses.includes(DiscountClass.Product)) {
     return { operations: [] };
   }
@@ -89,8 +98,13 @@ export function cartLinesDiscountsGenerateRun(input) {
     .map((line) => ({ cartLine: { id: line.id } }));
 
   if (!targets.length) {
-    return { operations: [] };
-  }
+  const names = rawNames.join(", ");
+  const message =
+    matchMode === "exclude"
+      ? `This code doesn't apply to: ${names}`
+      : `This code only applies to: ${names}`;
+  return bail(message);
+}
 
   const value =
     discountType === "fixed"
