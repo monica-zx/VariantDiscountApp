@@ -18,9 +18,9 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>Smart Discounts for Shopify Variants</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Simple, smart discounts based on variant names.
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">

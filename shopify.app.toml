@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "4d4459054f00d20728a08616249c4281"
-name = "Variant Discount App"
+name = "Nia Discounts"
 application_url = "https://variant-discount-app.vercel.app"
 embedded = true
 

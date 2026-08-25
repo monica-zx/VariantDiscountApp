@@ -138,14 +138,14 @@ function App() {
         if (result.type === "error") {
           console.error("Save error:", result.message);
           setSaveStatus("error");
-          setSaveErrorMessage("Couldn't stage your changes. Please try again.");
+          setSaveErrorMessage("Couldn't save your changes. Please try again.");
         } else {
           setSaveStatus("saved");
         }
       } catch (e) {
         console.error("Auto-save error:", e);
         setSaveStatus("error");
-        setSaveErrorMessage("Couldn't stage your changes. Please try again.");
+        setSaveErrorMessage("Couldn't save your changes. Please try again.");
       }
     }, 600);
 
@@ -197,19 +197,19 @@ function App() {
   const showRiskWarning = matchMode === "exclude" && variantNames.length === 0;
 
   return (
-    <s-function-settings>
-      <s-section heading="Variant Name Discount">
+    <s-function-settings >
+      <s-section heading=" ">
         <s-stack gap="base">
 
           {/* Status banner — only shown when there's something worth telling the merchant */}
           {saveStatus === "saving" && (
             <s-banner tone="info">
-              <s-text>Staging changes…</s-text>
+              <s-text>Saving changes…</s-text>
             </s-banner>
           )}
           {saveStatus === "saved" && (
             <s-banner tone="success">
-              <s-text>Changes staged — click Save (top of page) to publish.</s-text>
+              <s-text>Click Save to publish.</s-text>
             </s-banner>
           )}
           {saveStatus === "error" && (
@@ -220,7 +220,7 @@ function App() {
           {showRiskWarning && (
             <s-banner tone="warning">
               <s-text>
-                Heads up: with "exclude" selected and no variant names added, this
+                Heads up: with &quot;exclude&quot; selected and no variant names added, this
                 discount applies to every variant in your store.
               </s-text>
             </s-banner>

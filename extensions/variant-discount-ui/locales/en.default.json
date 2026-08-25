@@ -1,7 +1,7 @@
 {
-  "name": "[Example] Discount UI extension",
-  "description": "Discount UI extension",
-  "title": "Select which discount types to apply at checkout",
+  "name": "Variant Discount Settings",
+  "description": "Configure which variant names this discount applies to.",
+  "title": "Select which discount types to apply",
   "loading": "Loading...",
   "label": "Percentage off",
   "collections": {
@@ -17,4 +17,3 @@
   },
   "error": "Unable to update discount types. Please try again."
 }
-

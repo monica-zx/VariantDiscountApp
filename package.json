@@ -1,5 +1,5 @@
 {
-  "name": "Variant Discount App",
+  "name": "Nia Discounts",
   "private": true,
   "scripts": {
     "build": "react-router build",

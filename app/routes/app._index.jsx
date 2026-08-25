@@ -88,27 +88,26 @@ export default function Index({ loaderData }) {
   const hasFunction = functions.length > 0;
 
   return (
-    <s-page heading="Variant Discount App">
+    <s-page heading="Nia Discounts">
       {/* shopify:// links are automatically intercepted by App Bridge for
           in-admin navigation — no JS call needed. */}
       <s-link href="shopify://admin/discounts" slot="primary-action">
         Add discount
       </s-link>
 
-      <s-section heading="About this app">
+      <s-section heading="Smart Discounts for Shopify Variants">
         <s-paragraph>
-          Create smart discounts based on variant names. {" "}
-          <s-text fontWeight="bold">variant names</s-text>. Include or exclude variants and apply percentage or fixed amount discounts with ease.
-        </s-paragraph>
+          Create targeted discounts with smart variant matching and flexible include/exclude rules. </s-paragraph>
+         <s-paragraph> Include or exclude variants and apply percentage or fixed amount discounts with ease.</s-paragraph>
+        
         <s-paragraph>
           Each discount can apply either a{" "}
-          <s-text fontWeight="bold">percentage off</s-text> or a{" "}
-          <s-text fontWeight="bold">fixed amount off</s-text>, configured from the discount&apos;s settings page after you create it.
+          <s-text fontWeight="bold"><strong>percentage off</strong></s-text> or a{" "}
+          <s-text fontWeight="bold"><strong>fixed amount off</strong></s-text>, configured from the discount&apos;s settings page after you create it.
         </s-paragraph>
         <s-paragraph>
           To create a new one, click{" "}
-          <s-text fontWeight="bold">Add discount</s-text> above, then choose
-          this app's discount function from the list.
+          <s-text fontWeight="bold"><strong>Add discount</strong></s-text> above, then choose this app&apos;s discount function from the list.
         </s-paragraph>
       </s-section>
 
@@ -118,7 +117,7 @@ export default function Index({ loaderData }) {
             <s-text>
               No discount function was found for this app. Make sure it's
               deployed (
-              <s-text fontWeight="bold">shopify app deploy</s-text>) and
+              <s-text fontWeight="bold"><strong>shopify app deploy</strong></s-text>) and
               installed on this store.
             </s-text>
           </s-banner>
@@ -127,7 +126,7 @@ export default function Index({ loaderData }) {
         {hasFunction && appDiscounts.length === 0 && (
           <s-paragraph>
             You haven't created any discounts with this app yet. Click{" "}
-            <s-text fontWeight="bold">Add discount</s-text> to get started.
+            <s-text fontWeight="bold"><strong>Add discount</strong></s-text> to get started.
           </s-paragraph>
         )}
 

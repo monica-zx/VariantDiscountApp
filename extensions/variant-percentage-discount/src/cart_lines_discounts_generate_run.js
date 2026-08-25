@@ -16,12 +16,17 @@ function titleParts(title) {
 }
 
 export function cartLinesDiscountsGenerateRun(input) {
-  const enteredCode = input.triggeringDiscountCode;
-  const bail = (message) => {
-    if (enteredCode) {
-      return { operations: [{ enteredDiscountCodesReject: { codes: [{ code: enteredCode }], message } }] };
-    }
-    return { operations: [] };   // fixed: no more self-call
+  // NOTE: enteredDiscountCodesReject is only valid for functions backed by an
+  // AUTOMATIC discount (see Shopify's Discount Function API docs). This is a
+  // code discount (input.triggeringDiscountCode is set when a code triggers
+  // the run), so calling that operation here makes the whole run fail and
+  // Shopify falls back to its generic "isn't working right now" message.
+  // Until Shopify supports custom rejection messages for code discounts,
+  // the only valid response when the cart doesn't qualify is no operations —
+  // Shopify will show its own default "not valid for the items in your cart"
+  // style message instead.
+  const bail = () => {
+    return { operations: [] };
   };
 
   if (!input.discount.discountClasses.includes(DiscountClass.Product)) {
@@ -98,13 +103,14 @@ export function cartLinesDiscountsGenerateRun(input) {
     .map((line) => ({ cartLine: { id: line.id } }));
 
   if (!targets.length) {
-  const names = rawNames.join(", ");
-  const message =
-    matchMode === "exclude"
-      ? `This code doesn't apply to: ${names}`
-      : `This code only applies to: ${names}`;
-  return bail(message);
-}
+    // Would ideally be a custom message like:
+    //   matchMode === "exclude"
+    //     ? `This code doesn't apply to: ${rawNames.join(", ")}`
+    //     : `This code only applies to: ${rawNames.join(", ")}`
+    // — but Shopify doesn't support custom rejection messages for code
+    // discounts yet (see note above), so we just bail with no operations.
+    return bail();
+  }
 
   const value =
     discountType === "fixed"
